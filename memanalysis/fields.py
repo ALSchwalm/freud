@@ -109,6 +109,7 @@ class BitMaskField(Field):
             return True
         return False
 
+
 def BitMask(basetype, name, options):
     return type("BitMask" + basetype.__name__,
                 (BitMaskField, basetype), {})(name, options)

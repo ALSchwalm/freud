@@ -3,6 +3,17 @@ import mmap
 from memanalysis.memobject import *
 from memanalysis.fields import *
 
+class SubSub_Obj(MemoryObject):
+    fields_desc = [
+        Value(Int, "master_key_length", 48),
+    ]
+
+class Sub_Obj(MemoryObject):
+    fields_desc = [
+        Array(Byte, "key_arg", 8),
+        SubSub_Obj("subsub_obj")
+    ]
+
 class SSL_Session(MemoryObject):
     fields_desc = [
         BitMask(UnsignedInt, "ssl_version", {
@@ -10,8 +21,7 @@ class SSL_Session(MemoryObject):
             0x003 : "Major Version 3"
         }),
         UnsignedInt("key_arg_length"),
-        Array(Byte, "key_arg", 8),
-        Value(Int, "master_key_length", 48),
+        Sub_Obj("subobj"),
         Array(Byte, "master_key", 48),
         Value(UnsignedInt, "session_id_length", 32),
     ]
