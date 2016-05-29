@@ -103,7 +103,7 @@ class BitMaskField(Field):
     def verify(self, value):
         from functools import reduce
 
-        opts = [o for o in self.options.keys()
+        opts = [o for o in self.options.iterkeys()
                 if ~value & o == 0]
         if opts and value & ~reduce(lambda t, v: t | v, opts) == 0:
             return True

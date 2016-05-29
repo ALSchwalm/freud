@@ -10,17 +10,10 @@ class MemoryObjectMeta(type):
                     attrs["fields_desc"] = base.fields_desc
                     break
 
-        combined_fmt = ""
-        for f in attrs["fields_desc"]:
-            if isinstance(f, MemoryObject):
-                combined_fmt += str(struct.calcsize(f.fmt)) + "s"
-            else:
-                combined_fmt += f.fmt
+        combined_fmt = "".join([f.fmt for f in attrs["fields_desc"]])
         new = super(MemoryObjectMeta, cls).__new__(cls, name, bases, attrs)
         new.fmt = combined_fmt
         new.struct = struct.Struct(combined_fmt)
-        new.FieldType = namedtuple("Fields",
-                                   [f.name for f in attrs["fields_desc"]])
         return new
 
 
@@ -30,34 +23,37 @@ class MemoryObject(object):
 
     def __init__(self, name=""):
         self.name = name
+        self.fields = {}
+
+    @classmethod
+    def from_values(cls, fields):
+        out = cls()
+        index = 0
+        for f in cls.fields_desc:
+            if isinstance(f, MemoryObject):
+                mem = f.from_values(fields[index:index+len(f.fields_desc)])
+                if mem is None:
+                    return None
+                mem.name = f.name
+                out.fields[f.name] = mem
+                index += len(f.fields_desc)
+            else:
+                val = fields[index]
+                if hasattr(f, "from_bytes"):
+                    val = f.from_bytes(val)
+                if not f.verify(val):
+                    return None
+                out.fields[f.name] = val
+                index += 1
+        return out
 
     @classmethod
     def from_bytes(cls, s):
         if len(s) < cls.struct.size:
             return None
         else:
-            out = cls()
-            out.fields = cls.FieldType._make(cls.struct.unpack(s[:cls.struct.size]))
-
-            # namedtuple is immutable (but fast), so use a separate dict
-            # for any fields that have different representations
-            out.alt_fields = {}
-
-            for i, bs in enumerate(out.fields):
-                val = bs
-                if isinstance(cls.fields_desc[i], MemoryObject):
-                    subobj = cls.fields_desc[i].__class__.from_bytes(bs)
-                    if subobj is None:
-                        return None
-                    subobj.name = cls.fields_desc[i].name
-                    out.alt_fields[cls.fields_desc[i].name] = subobj
-                else:
-                    if hasattr(cls.fields_desc[i], "from_bytes"):
-                        val = cls.fields_desc[i].from_bytes(bs)
-                        out.alt_fields[cls.fields_desc[i].name] = val
-                    if not cls.fields_desc[i].verify(val):
-                        return None
-            return out
+            fields = cls.struct.unpack(s[:cls.struct.size])
+            return cls.from_values(fields)
         return True
 
     def format(self, level=0):
@@ -79,8 +75,6 @@ class MemoryObject(object):
         print(self.format())
 
     def __getattr__(self, attr):
-        if "alt_fields" in self.__dict__ and attr in self.__dict__["alt_fields"]:
-            return self.__dict__["alt_fields"][attr]
-        elif "fields" in self.__dict__ and hasattr(self.fields, attr):
-            return getattr(self.fields, attr)
+        if "fields" in self.__dict__ and attr in self.fields:
+            return self.fields[attr]
         raise AttributeError(attr)
