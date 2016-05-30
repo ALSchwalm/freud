@@ -4,7 +4,7 @@ class Field(object):
     def __init__(self, name):
         self.name = name
 
-    def verify(self, value):
+    def verify(self, value, ctx):
         """ Test applied to converted bytes """
         return True
 
@@ -64,7 +64,7 @@ class EnumField(Field):
         self.options = options
         Field.__init__(self, name)
 
-    def verify(self, value):
+    def verify(self, value, ctx):
         if value in self.options:
             return True
         return False
@@ -84,7 +84,7 @@ class BoundedField(Field):
         self.max = max
         Field.__init__(self, name)
 
-    def verify(self, value):
+    def verify(self, value, ctx):
         if value < self.min or value > self.max:
             return False
         return True
@@ -100,7 +100,7 @@ class BitMaskField(Field):
         self.options = options
         Field.__init__(self, name)
 
-    def verify(self, value):
+    def verify(self, value, ctx):
         from functools import reduce
 
         opts = [o for o in self.options.iterkeys()
@@ -120,9 +120,21 @@ class ValueField(Field):
         self.value = value
         Field.__init__(self, name)
 
-    def verify(self, value):
+    def verify(self, value, ctx):
         return self.value == value
 
 def Value(basetype, name, value):
     return type("Value" + basetype.__name__,
                 (ValueField, basetype), {})(name, value)
+
+
+class Ptr(Field):
+    fmt = "P"
+
+    def __init__(self, basetype, name, region_name=None):
+        self.basetype = basetype
+        self.region_name = region_name
+        Field.__init__(self, name)
+
+    def verify(self, value, ctx):
+        return ctx.is_valid_address(value, self.region_name)

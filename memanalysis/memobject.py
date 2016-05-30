@@ -26,12 +26,13 @@ class MemoryObject(object):
         self.fields = {}
 
     @classmethod
-    def from_values(cls, fields):
+    def from_values(cls, fields, ctx=None):
         out = cls()
         index = 0
         for f in cls.fields_desc:
             if isinstance(f, MemoryObject):
-                mem = f.from_values(fields[index:index+len(f.fields_desc)])
+                mem = f.from_values(fields[index:index+len(f.fields_desc)],
+                                    ctx)
                 if mem is None:
                     return None
                 mem.name = f.name
@@ -41,19 +42,19 @@ class MemoryObject(object):
                 val = fields[index]
                 if hasattr(f, "from_bytes"):
                     val = f.from_bytes(val)
-                if not f.verify(val):
+                if not f.verify(val, ctx):
                     return None
                 out.fields[f.name] = val
                 index += 1
         return out
 
     @classmethod
-    def from_bytes(cls, s):
+    def from_bytes(cls, s, ctx=None):
         if len(s) < cls.struct.size:
             return None
         else:
             fields = cls.struct.unpack(s[:cls.struct.size])
-            return cls.from_values(fields)
+            return cls.from_values(fields, ctx)
         return True
 
     def format(self, level=0):
@@ -68,7 +69,8 @@ class MemoryObject(object):
             if isinstance(f, MemoryObject):
                 msg += getattr(self, f.name).format(level=level+1)
             else:
-                msg += field_format.format(f.name, f.format(getattr(self, f.name)))
+                msg += field_format.format(f.name,
+                                           f.format(getattr(self, f.name)))
         return msg
 
     def show(self):
