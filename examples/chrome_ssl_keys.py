@@ -1,7 +1,7 @@
 import sys
-from memanalysis.memcontext import *
-from memanalysis.memobject import *
-from memanalysis.fields import *
+from freud.memcontext import *
+from freud.memobject import *
+from freud.fields import *
 
 # From https://github.com/openssl/openssl/blob/OpenSSL_1_0_2-stable/ssl/ssl.h#L498
 class OpenSSL_Session(MemoryObject):
