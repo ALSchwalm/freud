@@ -83,26 +83,20 @@ The following fields are built-in:
 - `Array(type, name, count)`: Represents and array of `type` of length `count`
 - `Enum(type, name, options)`: Represents values that must be one of a list of values.
 
-
-     # Enum Example
-    class ExampleObject(MemoryObject):
-        fields_desc = [
-            Enum(Byte, "version", {0x01: "Version 1", 0x02: "Version 2"})
-        ]
+        class ExampleObject(MemoryObject):
+            fields_desc = [
+                Enum(Byte, "version", {0x01: "Version 1", 0x02: "Version 2"})
+            ]
 
 - `Bounded(type, name, min, max)`: A field representing a value with an upper/lower bound
-- `BitMask(type, name, masks)`: A field representing a value that is a bitmask composed of the given masks
+- `BitMask(type, name, masks)`: A field representing a value that is a bitmask composed of the given masks.
+For example, the object will match when flags has values 0x001, 0x010, 0x011, 0x101, 0x110, 0x111, or 0x100. 
+That is, when the value is any bitwise OR combination of the provided masks.
 
-
-    # BitMask Example
-    class ExampleObject(MemoryObject):
-        fields_desc = [
-            BitMask(Byte, "flags", { 0x001: "active", 0x100: "ready", 0x010: "waiting"})
-        ]
-
-    # This object will match when flags has values 0x001, 0x010, 0x011, 0x101,
-    # 0x110, 0x111, or 0x100. That is, when the value is any bitwise OR combination
-    # of the provided masks.
+        class ExampleObject(MemoryObject):
+            fields_desc = [
+                BitMask(Byte, "flags", { 0x001: "active", 0x100: "ready", 0x010: "waiting"})
+            ]
 
 - `Ptr(type, name, region_name=None)`: A pointer in to memory registered with the memory context being searched
 
