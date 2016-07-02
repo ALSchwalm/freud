@@ -16,12 +16,12 @@ public:
 };
 
 int main(int argc, char** argv) {
-    freud::MemoryContext ctx(atoi(argv[1]));
+    freud::MemoryContext ctx(atoi(argv[1]), true);
 
     freud::MemoryContextIterator<SSL_SESSION_Matcher> iter =
         ctx.scan_once<SSL_SESSION_Matcher>();
 
-    for (; iter != ctx.end<SSL_SESSION_Matcher>(); ++iter) {
+    for (; iter != ctx.end(); ++iter) {
         std::cout << "RSA Session-ID:" << freud::format_as_hex(iter->session_id)
                   << " Master-Key:" << freud::format_as_hex(iter->master_key)
                   << std::endl;

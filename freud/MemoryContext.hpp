@@ -11,6 +11,8 @@ namespace freud {
 template <typename T>
 class MemoryContextIterator;
 
+class MemoryContextEndIterator {};
+
 template <typename Context>
 class BaseMemoryContext {
 public:
@@ -39,6 +41,8 @@ public:
     MemoryContextIterator<MemObject> end() const {
         return MemoryContextIterator<MemObject>();
     }
+
+    MemoryContextEndIterator end() const { return MemoryContextEndIterator(); }
 
     const std::vector<MemoryRegion>& mapped_regions() const {
         return m_regions;
