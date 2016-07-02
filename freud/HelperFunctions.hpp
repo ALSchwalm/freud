@@ -1,7 +1,9 @@
 #ifndef FREUD_HELPER_FUNCTIONS
 #define FREUD_HELPER_FUNCTIONS
 
-#include <boost/format.hpp>
+#include <cstdio>
+#include <iomanip>
+#include <iostream>
 #include <sstream>
 #include <string>
 
@@ -12,11 +14,14 @@ namespace freud {
  */
 template <typename Iter>
 std::string format_as_hex(Iter begin, Iter end) {
-    std::ostringstream ss;
+    std::stringstream ss;
+    char buff[3] = "\0\0";
     for (; begin != end; ++begin) {
         for (unsigned int i = 0; i < sizeof(*begin); ++i) {
-            const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&*begin) + i;
-            ss << boost::format("%02x") % static_cast<unsigned>(*ptr);
+            const unsigned char* ptr =
+                reinterpret_cast<const unsigned char*>(&*begin) + i;
+            sprintf(buff, "%02x", *ptr);
+            ss << buff;
         }
     }
     return ss.str();

@@ -5,9 +5,13 @@
 class SSL_SESSION_Matcher : public freud::MemoryObject<SSL_SESSION> {
 public:
     static bool verify(const freud::MemoryContext& ctx, const SSL_SESSION& e,
-                       uint64_t address) {
-        return e.ssl_version == 0x303 && e.master_key_length == 48 &&
-               e.session_id_length == 32;
+                       freud::address_t address) {
+        bool res = e.ssl_version == 0x303 && e.master_key_length == 48 &&
+                   e.session_id_length == 32;
+        if (res)
+            std::cout << "Found match at " << address << std::endl;
+
+        return res;
     }
 };
 

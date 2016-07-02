@@ -1,12 +1,10 @@
 #ifndef FREUD_MEMORY_CONTEXT
 #define FREUD_MEMORY_CONTEXT
 
+#include "freud/Defines.hpp"
 #include <fstream>
 #include <string>
 #include <vector>
-
-#include <boost/format.hpp>
-#include <boost/regex.hpp>
 
 namespace freud {
 
@@ -18,8 +16,8 @@ class BaseMemoryContext {
 public:
     struct MemoryRegion {
         std::string name;
-        uint64_t start_address;
-        uint64_t end_address;
+        address_t start_address;
+        address_t end_address;
     };
 
     virtual ~BaseMemoryContext() {}
@@ -47,7 +45,7 @@ public:
     }
 
     typename std::vector<MemoryRegion>::const_iterator
-    region_containing(uint64_t address) const {
+    region_containing(address_t address) const {
         for (typename std::vector<MemoryRegion>::const_iterator iter =
                  m_regions.begin();
              iter != m_regions.end(); ++iter) {

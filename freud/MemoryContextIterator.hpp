@@ -1,9 +1,9 @@
 #ifndef FREUD_MEMORY_CONTEXT_ITERATOR
 #define FREUD_MEMORY_CONTEXT_ITERATOR
 
+#include "freud/Alignment.hpp"
 #include "freud/MemoryContext.hpp"
 #include <boost/iterator/iterator_facade.hpp>
-#include <iostream>
 
 namespace freud {
 
@@ -30,7 +30,7 @@ public:
         while (m_iter != m_ctx->mapped_regions().end()) {
             if (m_ctx->read(m_address, m_bytes, m_iter)) {
                 m_address +=
-                    boost::alignment_of<typename MemObject::type>::value;
+                    detail::alignment_of<typename MemObject::type>::value;
                 if (m_address >= m_iter->end_address) {
                     m_iter++;
                     if (m_iter == m_ctx->mapped_regions().end())
@@ -65,7 +65,7 @@ public:
 
     bool continuous() const { return m_continuous; }
 
-    uint64_t address() const { return m_address; }
+    address_t address() const { return m_address; }
 
 private:
     void reached_end_of_context() {
@@ -83,7 +83,7 @@ private:
 
     MemoryContext* m_ctx;
     typename std::vector<MemoryContext::MemoryRegion>::const_iterator m_iter;
-    uint64_t m_address;
+    address_t m_address;
     std::vector<char> m_bytes;
     bool m_continuous;
 };
