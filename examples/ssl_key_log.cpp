@@ -13,7 +13,7 @@ public:
 };
 
 int main(int argc, char** argv) {
-    freud::LinuxMemoryContext ctx(atoi(argv[1]));
+    freud::MemoryContext ctx(atoi(argv[1]), true);
 
     freud::MemoryContextIterator<SSL_SESSION_Matcher> iter =
         ctx.scan_once<SSL_SESSION_Matcher>();
