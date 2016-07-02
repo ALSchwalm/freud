@@ -59,23 +59,24 @@ public:
         std::ifstream maps_file(path.c_str());
 
         std::string region_info;
-        boost::regex expr(
-            "(\\S+)-(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)?");
-        boost::smatch match;
         while (std::getline(maps_file, region_info)) {
-            if (boost::regex_search(region_info, match, expr)) {
-                uint64_t start_addr =
-                    std::strtoull(match[1].str().c_str(), NULL, 16);
-                uint64_t end_addr =
-                    std::strtoull(match[2].str().c_str(), NULL, 16);
+            std::string addrs = region_info.substr(0, region_info.find(" "));
 
-                MemoryRegion region = {match[7], start_addr, end_addr};
-                if (m_heap_only && match[7] == "[heap]") {
-                    m_regions.push_back(region);
-                    break;
-                } else if (!m_heap_only) {
-                    m_regions.push_back(region);
-                }
+            std::string start_addr_s = addrs.substr(0, addrs.find("-"));
+            std::string end_addr_s = addrs.substr(addrs.find("-") + 1);
+
+            uint64_t start_addr = std::strtoull(start_addr_s.c_str(), NULL, 16);
+            uint64_t end_addr = std::strtoull(end_addr_s.c_str(), NULL, 16);
+
+            std::string name = region_info.substr(region_info.rfind(" ") + 1);
+
+            MemoryRegion region = {name, start_addr, end_addr};
+
+            if (m_heap_only && name == "[heap]") {
+                m_regions.push_back(region);
+                break;
+            } else if (!m_heap_only) {
+                m_regions.push_back(region);
             }
         }
     }

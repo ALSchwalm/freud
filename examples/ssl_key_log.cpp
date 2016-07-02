@@ -1,7 +1,6 @@
 #include "freud/freud.hpp"
 #include <iostream>
 #include <openssl/ssl.h>
-#include <unistd.h>
 
 class SSL_SESSION_Matcher : public freud::MemoryObject<SSL_SESSION> {
 public:
@@ -13,7 +12,7 @@ public:
 };
 
 int main(int argc, char** argv) {
-    freud::MemoryContext ctx(atoi(argv[1]), true);
+    freud::MemoryContext ctx(atoi(argv[1]));
 
     freud::MemoryContextIterator<SSL_SESSION_Matcher> iter =
         ctx.scan_once<SSL_SESSION_Matcher>();
