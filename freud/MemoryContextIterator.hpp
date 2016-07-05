@@ -59,6 +59,7 @@ public:
                     m_address = m_iter->start_address;
                 }
 
+                MemObject::before_check();
                 if (!MemObject::verify(*m_ctx, this->dereference(),
                                        m_address)) {
                     continue;

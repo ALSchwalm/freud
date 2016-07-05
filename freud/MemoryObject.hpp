@@ -8,6 +8,7 @@ class MemoryObject {
 public:
     typedef T type;
     static bool verify(const T&) { return true; }
+    static void before_check() {}
 };
 }
 

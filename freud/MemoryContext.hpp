@@ -22,7 +22,7 @@ public:
         address_t end_address;
     };
 
-    virtual ~BaseMemoryContext() {}
+    ~BaseMemoryContext() {}
 
     template <typename MemObject>
     MemoryContextIterator<MemObject> scan_once() {
