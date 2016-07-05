@@ -16,7 +16,8 @@ public:
         m_mem.open(ss.str().c_str());
         update_regions();
     }
-    virtual ~LinuxMemoryContext() {}
+
+    ~LinuxMemoryContext() {}
 
     bool read(address_t address, std::vector<char>& buffer) {
         return read(address, buffer, region_containing(address));
@@ -62,6 +63,7 @@ public:
 
     void update_regions() {
         m_regions.clear();
+        m_cached_region.second.resize(0);
         std::ostringstream ss;
         ss << "/proc/" << m_pid << "/maps";
         std::ifstream maps_file(ss.str().c_str());
