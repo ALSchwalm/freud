@@ -7,11 +7,24 @@
 
 namespace freud {
 
+/** \brief An iterator into some MemoryContext
+ *
+ * MemoryContextIterators apply a typed view onto a MemoryContext. When
+ * dereferenced, the iterator returns a reference to an instance of
+ * the MemObject::type for which MemObject::verify returns true.
+ */
 template <typename MemObject>
 class MemoryContextIterator : public std::iterator<std::forward_iterator_tag,
                                                    typename MemObject::type> {
 public:
+    /// Default constructor for the iterator
     MemoryContextIterator() : m_address(0) {}
+
+    /**
+     * \param ctx The context this iterator iterates over
+     * \param continuous If this parameter is 'true', the context's mapped
+     *                   regions are updated (invalidating other iterators).
+     */
     MemoryContextIterator(MemoryContext& ctx, bool continuous = false)
         : m_ctx(&ctx),
           m_iter(m_ctx->mapped_regions().begin()),
@@ -24,10 +37,13 @@ public:
         this->increment();
     }
 
+    /// Advance to the next matching memory object
     MemoryContextIterator& operator++() {
         increment();
         return *this;
     }
+
+    /// Advance to the next matching memory object
     MemoryContextIterator operator++(int) {
         MemoryContextIterator retval = *this;
         ++(*this);
@@ -47,6 +63,18 @@ public:
         return &dereference();
     }
 
+    /// Test if this is a continuous iterator.
+    /**
+     * If the iterator is continuous, the context's mapped, the corresponding
+     * memory context's regions are updated when the end of the context is
+     * reached (invalidating other iterators).
+     */
+    bool continuous() const { return m_continuous; }
+
+    /// Get the current address in the memory context's address space
+    address_t address() const { return m_address; }
+
+private:
     void increment() {
         while (m_iter != m_ctx->mapped_regions().end()) {
             if (m_ctx->read(m_address, m_bytes, m_iter)) {
@@ -80,11 +108,6 @@ public:
             &*m_bytes.begin());
     }
 
-    bool continuous() const { return m_continuous; }
-
-    address_t address() const { return m_address; }
-
-private:
     template <typename T>
     friend bool operator==(const MemoryContextIterator<T>& left,
                            MemoryContextEndIterator right);
