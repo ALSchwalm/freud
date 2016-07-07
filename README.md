@@ -1,115 +1,144 @@
-# freud
+Freud
+=====
+
+`freud` is a C++ header-only library for finding structures in a running
+process's memory.
+
+Installation
+------------
+
+As a header-only library, no installation is required. `freud` supports
+any C++98 or newer compiler. To use it, simply clone this project or
+download the zip file and add the 'freud' directory to your C++ project's
+include path.
+
+Usage
+-----
+
+Using `freud` has three major components:
+
+- Defining a `MemoryObject`
+- Creating a `MemoryContext`
+- Scanning the context for your objects
+
+These steps are detailed below:
+
+Defining a MemoryObject
+-----------------------
+
+A `MemoryObject` represents some series of constraints used to verify
+that a particular collection of bytes are an instance of some type.
+For example, suppose that you know you are looking for a structure that
+has the following layout:
+
+    struct Position {
+        int x;
+        int y;
+    }
+
+This alone would not be enough to locate the structure. We need some
+type of constraint or element to use to narrow down the search. In this
+case, suppose we know that the 'x' position is equal to 10 and we want
+to find the 'y' position. Then we could define a `MemoryObject` like
+this:
+
+    class PositionMatcher : public MemoryObject<Position> {
+        static bool verify(const Position& p) {
+            return p.x == 10;
+        }
+    }
+
+The core of this definition is the `verify` member function. This function
+will be passed an object created from bytes in a `MemoryContext`. The user
+must determine whether the provided object has the properties they expect.
+In this case, we test whether the 'x' member has the expected value.
 
 
-`freud` is a python library for locating structures in process memory.
+Creating a `MemoryContext`
+--------------------------
 
-# Installation
+A `MemoryContext` represents a generic interface to some collection of memory.
+Typically, this will be a running process's memory. This interface can be used
+to read bytes from another process's virtual address space.
 
+In general, a `MemoryContext` can be created from whatever the process ID
+equivalent is on a given platform. Suppose that the 'Xorg' process on my target
+has a PID of 659. Then I can create a context for that processes with
 
-Install the latest version from pypi with `pip install freud`, or get the
-development version by cloning this repository and running `python setup.py install`.
-Note that `pypy` is dramatically faster than cpython when running `freud`, so
-if possible, consider installing it.
+    MemoryContext ctx(659);
 
-# Usage
+Note that reading from a `MemoryContext` may require elevated permissions on
+some platforms. Specifically, the user must be root on Linux. However, Windows
+processes may read each other's memory provided that have the same permissions.
 
+Scanning the context for your objects
+-------------------------------------
 
-Note that `freud` borrows some interface decisions from the excellent `scapy`
-project, so some of the following may look a bit familiar to people familiar
-with that library.
+A `MemoryContext` will provide two member functions for scanning the memory
+it wraps: `scan_once` and `scan_forever`. These return a `MemoryContextIterator`,
+which is a type representing a pointer into some process memory. When
+dereferenced, the iterator will return a reference to an instance of the
+target structure that passes the 'verify' test of the matcher. For example,
+a user could print all of the `Positions` with the following code:
 
-## MemoryObjects
+    MemoryContextIterator<PositionMatcher> iter = ctx.scan_once<PositionMatcher>();
 
+    for(; iter != ctx.end(); ++iter) {
+        std::cout << "Position: x=" << iter->x << ", y=" << iter->y << "\n";
+    }
 
-`MemoryObject`s are the basis for most operations in `freud`. These represent
-some structure in memory, having fields with specific characteristics. For example:
+The `scan_forever` function is similar. However the `MemoryContextIterator`
+returned by this function will never equal `ctx.end()`. Instead, it will
+wrap around and start scanning memory again when it reaches the end. This is
+useful for making a real-time scraping program.
 
-    class ExampleObject(MemoryObject):
-        fields_desc = [
-            UnsignedInt("version"),
-            Array(Byte, "contents", 6)
-        ]
+Note however, that a given `MemoryContext` object should only have one
+continuous (i.e., returned from `scan_forever`) object at a time. Incrementing
+an iterator of this kind will invalidate all other iterators into the context.
+Multiple single pass (i.e., returned from `scan_once`) iterators may be used
+at the same time. Additionally, multiple contexts may refer to the same process.
 
-This class definition describes a structure in memory having an `unsigned int`
-version field, and another that has type `char[6]`. However, these two fields
-do not provide any constraints. What if we knew that the version field would
-always have value `1` in the target program? We can write this like:
+Putting it all together
+-----------------------
 
-    class ExampleObject(MemoryObject):
-        fields_desc = [
-            Value(UnsignedInt, "version", 1),
-            Array(Byte, "contents", 6)
-        ]
+A complete example to print all of the `Position` objects would therefore
+look like this:
 
-So the first field is really a `Value` of type `UnsignedInt`. This will constrain
-matches to only those bytes in target memory that can be used to create this
-structure where the portion of the bytes used for the version have the value 1
-as an `unsigned int`. So:
+    #include "freud/freud.hpp"
+    #include <iostream> // for streams
+    #include <cstdlib>  // for atio
 
-    01 02 03 04 01 02 03 04 05 06   Does not match (version would be 0x01020304=16909060)
-    00 00 00 01 01 02 03 04 05 06   Matches (version is 0x00000001=1)
+    struct Position {
+        int x;
+        int y;
+    };
 
-Note that the values for `contents` do not matter in the above example, because
-`Array` does not provide any constraints.
+    class PositionMatcher : public MemoryObject<Position> {
+        static bool verify(const Position& p) {
+            return p.x == 10;
+        }
+    };
 
-## MemoryContexts
+    int main(int argc, char** argv) {
+        MemoryContext ctx(atoi(argv[1]));
 
+        MemoryContextIterator<PositionMatcher> iter =
+            ctx.scan_once<PositionMatcher>();
 
-A `MemoryContext` is a type representing a collection of bytes mapping to a processes'
-memory. These contexts can be directly created from a process ID (currently linux only)
-or by registering some bytes with the context.
-
-    ctx = MemoryContext.from_linux_pid(1234)   # loading from a PID
-
-    # Or registering manually
-    ctx = MemoryContext()
-    with open("myfile", "rb") as f:
-      contents = f.read()
-      ctx.register_region(contents, 0x1000, 0x1000+len(contents))
-
-You can then locate occurrences of some `MemoryObject` within the context with
-`find_all`.
-
-    for addr, obj in ctx.find_all(ExampleObject):
-        print("Found ExampleObject at {}: contents=".format(hex(addr), obj.contents))
-
-## Available Fields
-
-
-The following fields are built-in:
-
-- The primitives: `LongLong`, `Long`, `Int`, and `Short` (and `Unsigned` versions of each) as well as `Byte`.
-- `Value(name, value)`: A field representing a specific value
-- `Array(type, name, count)`: Represents and array of `type` of length `count`
-- `Enum(type, name, options)`: Represents values that must be one of a list of values.
-
-        class ExampleObject(MemoryObject):
-            fields_desc = [
-                Enum(Byte, "version", {0x01: "Version 1", 0x02: "Version 2"})
-            ]
-
-- `Bounded(type, name, min, max)`: A field representing a value with an upper/lower bound
-- `BitMask(type, name, masks)`: A field representing a value that is a bitmask composed of the given masks.
-For example, the object will match when flags has values 0x001, 0x010, 0x011, 0x101, 0x110, 0x111, or 0x100. 
-That is, when the value is any bitwise OR combination of the provided masks.
-
-        class ExampleObject(MemoryObject):
-            fields_desc = [
-                BitMask(Byte, "flags", { 0x001: "active", 0x100: "ready", 0x010: "waiting"})
-            ]
-
-- `Ptr(type, name, region_name=None)`: A pointer in to memory registered with the memory context being searched
+        for(; iter != ctx.end(); ++iter) {
+            std::cout << "Position: x=" << iter->x << ", y=" << iter->y << "\n";
+        }
+    }
 
 
-## Custom Fields
+Contributing
+------------
 
+This project is currently in a somewhat unstable state, so things may change.
+That being said, contributions are welcome.
 
-A `Field` is really any type that has the following characteristics:
+Library
+-------
 
-- A `fmt` attribute that specifies the layout of the field (see
-[the python struct docs](https://docs.python.org/2/library/struct.html))
-- A `verify(value, ctx)` method. This should return `True` if the provided value represents a valid value for the field
-- A `format(value)` method. This should return a string used to print the `Field`
-- Optionally, a `from_bytes(bytes)` method. This is useful if there is no `struct`
-format character that is appropriate. You can instead use 's' and write this method to convert the bytes to a meaningful
-value (which will then be passed to `verify`)
+This project is released under the terms of the MIT license. See the LICENSE
+file for details.

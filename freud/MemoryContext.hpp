@@ -22,10 +22,21 @@ class MemoryContextEndIterator {};
 template <typename Context>
 class BaseMemoryContext {
 public:
-    /// Represents a valid region of addresses in a context
+    /// Represents a valid region of addresses in a context.
+    /**
+     * Specifically, a MemoryRegion represents the boundaries of a
+     * collection of virtual addresses that are backed by some
+     * physical address. Note that some platforms do provide names
+     * for regions, in which case 'name' will be the empty string.
+     */
     struct MemoryRegion {
+        /// The name of the region (or the empty string for anonymous regions)
         std::string name;
+
+        /// The starting virtual address of the region
         address_t start_address;
+
+        /// The ending virtual address of the region
         address_t end_address;
     };
 

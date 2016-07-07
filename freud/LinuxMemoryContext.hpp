@@ -7,6 +7,22 @@
 
 namespace freud {
 
+/** \brief A memory context for Linux processes
+ *
+ * A LinuxMemoryContext is, essentially, an interface to the
+ * /proc/<pid>/maps and /proc/<pid>/mem files for a given processes.
+ * Mapped regions (that is, contiguous virtual addresses that have
+ * some physical addresses backing them) are read from the 'maps' file
+ * and the bytes from those regions are then collected from the 'mem'
+ * file.
+ *
+ * In practice, it is necessary to read larger blocks of memory and
+ * cache the results to improve performance. It is possible, therefore,
+ * to get 'stale' results from a read, when reading bytes that are
+ * in the same region as a previous read. In the future, an interface
+ * may be exposed allowing the user to explicitly request a read that
+ * is not cached.
+ */
 class LinuxMemoryContext : public BaseMemoryContext<LinuxMemoryContext> {
 public:
     LinuxMemoryContext(unsigned long pid, bool heap_only = false)
@@ -120,6 +136,8 @@ private:
     }
 };
 
+/// \cond
 typedef LinuxMemoryContext MemoryContext;
+/// \endcond
 }
 #endif
