@@ -106,7 +106,7 @@ look like this:
 
     #include "freud/freud.hpp"
     #include <iostream> // for streams
-    #include <cstdlib>  // for atio
+    #include <cstdlib>  // for atoi
 
     struct Position {
         int x;
