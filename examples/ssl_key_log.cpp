@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
 
             out << "RSA Session-ID:" << freud::format_as_hex(iter->session_id)
                 << " Master-Key:" << freud::format_as_hex(iter->master_key)
-                << "\n";
+                << std::endl;
             known_matches.insert(iter.address());
         }
     }
