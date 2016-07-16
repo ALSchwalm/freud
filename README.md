@@ -2,7 +2,9 @@ Freud
 =====
 
 `freud` is a C++ header-only library for finding structures in a running
-process's memory.
+process's memory. API documentation is available: [documentation][docs]
+
+[docs]: http://alschwalm.com/freud/docs/html/index.html
 
 Installation
 ------------
